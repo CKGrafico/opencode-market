@@ -7,8 +7,9 @@ import { header, success, error, info, warn } from '../utils/exec.js'
 /**
  * Update all installed plugins for a given marketplace.
  * @param {string} marketplaceName
+ * @param {{ local?: boolean }} options
  */
-export async function runUpdate(marketplaceName) {
+export async function runUpdate(marketplaceName, options = {}) {
   header('Updating marketplace');
 
   const registry = await getMarketplace(marketplaceName);
@@ -60,7 +61,7 @@ export async function runUpdate(marketplaceName) {
 
     const { pluginJson, pluginBasePath } = result;
     info(`Updating ${pluginName} to v${pluginJson.version}...`);
-    await installPlugin(owner, repo, registry.ref, pluginBasePath, pluginJson);
+    await installPlugin(owner, repo, registry.ref, pluginBasePath, pluginJson, options);
     success(`Updated ${chalk.bold(pluginName)}`);
   }
 

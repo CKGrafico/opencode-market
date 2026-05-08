@@ -10,7 +10,7 @@ function printHelp(version) {
   console.log(`opencode-market v${version}`);
   console.log();
   console.log('Usage:');
-  console.log('  npx opencode-market <command> [args]');
+  console.log('  npx opencode-market <command> [args] [options]');
   console.log();
   console.log('Commands:');
   console.log('  add <owner/repo>          Register a marketplace from a GitHub repo');
@@ -19,6 +19,8 @@ function printHelp(version) {
   console.log('  list                       List registered marketplaces and installed plugins');
   console.log();
   console.log('Options:');
+  console.log('  --local                   Install to ./.agents/ (project) instead of ~/.agents/ (global)');
+  console.log('  --opencode                Install to ./.opencode/ (opencode project folder)');
   console.log('  -h, --help                Show this help message');
 }
 
@@ -32,7 +34,9 @@ if (args.includes('-h') || args.includes('--help') || args.length === 0) {
 }
 
 const command = args[0];
-const arg = args[1];
+const positional = args.filter(a => !a.startsWith('--'));
+const arg = positional[1];
+const options = { local: args.includes('--local'), opencode: args.includes('--opencode') };
 
 try {
   switch (command) {
@@ -51,7 +55,7 @@ try {
         console.log('Usage: npx opencode-market install <plugin>@<marketplace>');
         process.exit(1);
       }
-      await runInstall(arg);
+      await runInstall(arg, options);
       break;
 
     case 'update':
@@ -60,7 +64,7 @@ try {
         console.log('Usage: npx opencode-market update <marketplace>');
         process.exit(1);
       }
-      await runUpdate(arg);
+      await runUpdate(arg, options);
       break;
 
     case 'list':

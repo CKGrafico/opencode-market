@@ -6,8 +6,8 @@ CLI to discover, install, and manage opencode agent plugins from GitHub marketpl
 
 ```bash
 npx opencode-market add <owner/repo>
-npx opencode-market install <plugin>@<marketplace>
-npx opencode-market update <marketplace>
+npx opencode-market install <plugin>@<marketplace> [--local] [--opencode]
+npx opencode-market update <marketplace> [--local] [--opencode]
 npx opencode-market list
 ```
 
@@ -22,15 +22,34 @@ Register a marketplace from a GitHub repo. Searches for `marketplace.json` in:
 
 ### `install <plugin>@<marketplace>`
 
-Install a plugin from a registered marketplace. Downloads agents and skills into `.agents/agents/` and `.agents/skills/` in the current directory.
+Install a plugin from a registered marketplace. By default installs globally to `~/.agents/`.
+
+```bash
+# Global (default) — available to all projects
+npx opencode-market install proposals@plainpresales
+
+# Project-local — installs to ./.agents/
+npx opencode-market install proposals@plainpresales --local
+
+# OpenCode project folder — installs to ./.opencode/
+npx opencode-market install proposals@plainpresales --opencode
+```
 
 ### `update <marketplace>`
 
-Re-fetch the marketplace definition and re-download all installed plugins.
+Re-fetch the marketplace definition and re-download all installed plugins. Accepts the same `--local` and `--opencode` flags as `install`.
 
 ### `list`
 
 Print all registered marketplaces and their installed plugins.
+
+## Install destinations
+
+| Flag | Agents | Skills |
+|------|--------|--------|
+| *(default)* | `~/.agents/agents/` | `~/.agents/skills/` |
+| `--local` | `./.agents/agents/` | `./.agents/skills/` |
+| `--opencode` | `./.opencode/agents/` | `./.opencode/skills/` |
 
 ## Authentication
 

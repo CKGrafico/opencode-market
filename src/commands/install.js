@@ -7,8 +7,9 @@ import { header, success, error, info } from '../utils/exec.js'
 /**
  * Install a plugin from a registered marketplace.
  * @param {string} pluginAtMarketplace - "plugin@marketplace" format
+ * @param {{ local?: boolean }} options
  */
-export async function runInstall(pluginAtMarketplace) {
+export async function runInstall(pluginAtMarketplace, options = {}) {
   header('Installing plugin');
 
   const atIndex = pluginAtMarketplace.indexOf('@');
@@ -55,7 +56,7 @@ export async function runInstall(pluginAtMarketplace) {
   const { pluginJson, pluginBasePath } = result;
   info(`Installing ${pluginName} v${pluginJson.version}...`);
 
-  await installPlugin(owner, repo, registry.ref, pluginBasePath, pluginJson);
+  await installPlugin(owner, repo, registry.ref, pluginBasePath, pluginJson, options);
   await markInstalled(marketplaceName, pluginName);
 
   success(`Installed ${chalk.bold(pluginName)} from ${chalk.bold(marketplaceName)}`);

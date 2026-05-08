@@ -1,7 +1,26 @@
 import fse from 'fs-extra'
+import os from 'os'
 import path from 'path'
 import { fetchJsonFile, fetchRawFile, listGitHubDirectory } from './github.js'
 import { info, success } from './exec.js'
+
+/**
+ * Resolve the base directory for installing agents/skills.
+ *
+ * --opencode            →  <cwd>/.opencode/
+ * --local               →  <cwd>/.agents/
+ * (default, global)     →  ~/.agents/
+ *
+ * --opencode takes priority over --local when both are passed.
+ *
+ * @param {{ local?: boolean, opencode?: boolean }} options
+ * @returns {string}
+ */
+export function resolveInstallBase(options = {}) {
+  if (options.opencode) return path.join(process.cwd(), '.opencode');
+  if (options.local) return path.join(process.cwd(), '.agents');
+  return path.join(os.homedir(), '.agents');
+}
 
 /**
  * Install a plugin by downloading its agents and skills folders.
@@ -10,20 +29,23 @@ import { info, success } from './exec.js'
  * @param {string} ref - branch or tag
  * @param {string} pluginSource - path prefix to the plugin within the repo (e.g. ".claude-plugin/")
  * @param {object} pluginJson - parsed plugin.json
+ * @param {{ local?: boolean, opencode?: boolean }} options
  */
-export async function installPlugin(owner, repo, ref, pluginSource, pluginJson) {
-  const cwd = process.cwd();
+export async function installPlugin(owner, repo, ref, pluginSource, pluginJson, options = {}) {
+  const base = resolveInstallBase(options);
   const basePath = pluginSource.endsWith('/') ? pluginSource : `${pluginSource}/`;
 
   if (pluginJson.agents) {
     const agentsPath = `${basePath}${pluginJson.agents}`.replace(/\/+/g, '/');
-    await downloadFolder(owner, repo, ref, agentsPath, path.join(cwd, '.agents', 'agents'));
+    await downloadFolder(owner, repo, ref, agentsPath, path.join(base, 'agents'));
   }
 
   if (pluginJson.skills) {
     const skillsPath = `${basePath}${pluginJson.skills}`.replace(/\/+/g, '/');
-    await downloadFolder(owner, repo, ref, skillsPath, path.join(cwd, '.agents', 'skills'));
+    await downloadFolder(owner, repo, ref, skillsPath, path.join(base, 'skills'));
   }
+
+  info(`Installed to: ${base}`);
 }
 
 /**
