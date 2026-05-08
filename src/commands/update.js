@@ -1,16 +1,16 @@
 import chalk from 'chalk'
 import { fetchJsonFile } from '../utils/github.js'
-import { getMarketplace, setMarketplace } from '../utils/registry.js'
+import { getMarketplace } from '../utils/registry.js'
 import { fetchPluginJson, installPlugin } from '../utils/installer.js'
 import { header, success, error, info, warn } from '../utils/exec.js'
 
 /**
- * Update all installed plugins for a given marketplace.
+ * Re-download all installed plugins for a given marketplace.
  * @param {string} marketplaceName
- * @param {{ local?: boolean }} options
+ * @param {{ local?: boolean, opencode?: boolean }} options
  */
 export async function runUpdate(marketplaceName, options = {}) {
-  header('Updating marketplace');
+  header('Updating plugins');
 
   const registry = await getMarketplace(marketplaceName);
   if (!registry) {
@@ -19,32 +19,22 @@ export async function runUpdate(marketplaceName, options = {}) {
     return;
   }
 
+  const installed = registry.installed || [];
+  if (installed.length === 0) {
+    info(`No installed plugins for "${marketplaceName}"`);
+    return;
+  }
+
   const [owner, repo] = registry.repo.split('/');
 
-  info(`Re-fetching marketplace.json from ${registry.repo}...`);
+  // Need marketplace.json only to resolve each plugin's source path
   const marketplace = await fetchJsonFile(owner, repo, registry.ref, registry.source);
   if (!marketplace) {
     error(`Could not fetch marketplace.json from ${registry.repo}`);
     return;
   }
 
-  // Update the registry entry with latest marketplace data
-  await setMarketplace(marketplaceName, {
-    repo: registry.repo,
-    ref: registry.ref,
-    source: registry.source,
-    installed: registry.installed || [],
-  });
-
-  success(`Marketplace "${marketplaceName}" refreshed`);
-
-  const installed = registry.installed || [];
-  if (installed.length === 0) {
-    info('No installed plugins to update');
-    return;
-  }
-
-  info(`Updating ${installed.length} installed plugin(s)...`);
+  info(`Updating ${installed.length} plugin(s) from "${marketplaceName}"...`);
 
   for (const pluginName of installed) {
     const pluginEntry = marketplace.plugins?.find(p => p.name === pluginName);
@@ -65,5 +55,5 @@ export async function runUpdate(marketplaceName, options = {}) {
     success(`Updated ${chalk.bold(pluginName)}`);
   }
 
-  success('All installed plugins updated');
+  success('Done');
 }

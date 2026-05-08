@@ -4,8 +4,8 @@ import { setMarketplace } from '../utils/registry.js'
 import { header, success, error, info } from '../utils/exec.js'
 
 const MARKETPLACE_PATHS = [
-  '.claude-plugin/marketplace.json',
   '.github/plugin/marketplace.json',
+  '.claude-plugin/marketplace.json',
   'marketplace.json',
 ];
 

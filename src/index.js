@@ -15,7 +15,7 @@ function printHelp(version) {
   console.log('Commands:');
   console.log('  add <owner/repo>          Register a marketplace from a GitHub repo');
   console.log('  install <plugin>@<market>  Install a plugin from a registered marketplace');
-  console.log('  update <marketplace>       Re-fetch and update all installed plugins');
+  console.log('  update <marketplace>       Re-download all installed plugins for a marketplace');
   console.log('  list                       List registered marketplaces and installed plugins');
   console.log();
   console.log('Options:');

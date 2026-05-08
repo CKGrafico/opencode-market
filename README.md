@@ -16,8 +16,8 @@ npx opencode-market list
 ### `add <owner/repo>`
 
 Register a marketplace from a GitHub repo. Searches for `marketplace.json` in:
-1. `.claude-plugin/marketplace.json`
-2. `.github/plugin/marketplace.json`
+1. `.github/plugin/marketplace.json`
+2. `.claude-plugin/marketplace.json`
 3. `marketplace.json` (root)
 
 ### `install <plugin>@<marketplace>`
@@ -37,7 +37,7 @@ npx opencode-market install proposals@plainpresales --opencode
 
 ### `update <marketplace>`
 
-Re-fetch the marketplace definition and re-download all installed plugins. Accepts the same `--local` and `--opencode` flags as `install`.
+Re-download all installed plugins for a marketplace. Fetches the latest files from GitHub for each plugin already recorded in `~/.opencode-market/registries.json`. Accepts the same `--local` and `--opencode` flags as `install`.
 
 ### `list`
 

@@ -33,15 +33,16 @@ export function resolveInstallBase(options = {}) {
  */
 export async function installPlugin(owner, repo, ref, pluginSource, pluginJson, options = {}) {
   const base = resolveInstallBase(options);
-  const basePath = pluginSource.endsWith('/') ? pluginSource : `${pluginSource}/`;
+  // Normalise: root plugin has pluginSource '' or '.' — both mean no prefix
+  const prefix = (!pluginSource || pluginSource === '.') ? '' : pluginSource.replace(/\/+$/, '') + '/';
 
   if (pluginJson.agents) {
-    const agentsPath = `${basePath}${pluginJson.agents}`.replace(/\/+/g, '/');
+    const agentsPath = `${prefix}${pluginJson.agents}`.replace(/\/+/g, '/').replace(/^\//, '');
     await downloadFolder(owner, repo, ref, agentsPath, path.join(base, 'agents'));
   }
 
   if (pluginJson.skills) {
-    const skillsPath = `${basePath}${pluginJson.skills}`.replace(/\/+/g, '/');
+    const skillsPath = `${prefix}${pluginJson.skills}`.replace(/\/+/g, '/').replace(/^\//, '');
     await downloadFolder(owner, repo, ref, skillsPath, path.join(base, 'skills'));
   }
 
@@ -79,22 +80,35 @@ async function downloadFolder(owner, repo, ref, remotePath, localBase) {
 
 /**
  * Resolve a plugin.json from its source path within the repo.
+ * The plugin source field is resolved from the repo root first.
+ * If not found, falls back to resolving relative to the marketplace.json directory.
  * @param {string} owner
  * @param {string} repo
  * @param {string} ref
- * @param {string} marketplaceSource - the source path from marketplace.json (e.g. ".claude-plugin/marketplace.json")
+ * @param {string} marketplaceSource - the source path from marketplace.json (e.g. ".github/plugin/marketplace.json")
  * @param {string} pluginSourceRelative - the plugin's source field (e.g. "./")
  * @returns {Promise<{pluginJson: object, pluginBasePath: string}|null>}
  */
 export async function fetchPluginJson(owner, repo, ref, marketplaceSource, pluginSourceRelative) {
-  // marketplaceSource is e.g. ".claude-plugin/marketplace.json"
-  // plugin source is relative to the directory containing marketplace.json
+  // Normalise source: strip leading "./" so path.posix.join works cleanly
+  const normalised = pluginSourceRelative.replace(/^\.\//, '').replace(/\/+$/, '') || '.';
+
+  // 1. Try repo-root relative (canonical: source: "./" means root)
+  const rootDir = normalised === '.' ? '' : normalised;
+  const rootPluginJsonPath = rootDir ? `${rootDir}/plugin.json` : 'plugin.json';
+  const rootResult = await fetchJsonFile(owner, repo, ref, rootPluginJsonPath);
+  if (rootResult) {
+    return { pluginJson: rootResult, pluginBasePath: rootDir };
+  }
+
+  // 2. Fallback: resolve relative to the directory containing marketplace.json
   const marketplaceDir = path.posix.dirname(marketplaceSource);
-  const pluginDir = path.posix.join(marketplaceDir, pluginSourceRelative).replace(/\/+$/, '');
-  const pluginJsonPath = `${pluginDir}/plugin.json`.replace(/\/+/g, '/');
+  const relDir = path.posix.join(marketplaceDir, normalised).replace(/\/+$/, '');
+  const relPluginJsonPath = `${relDir}/plugin.json`;
+  const relResult = await fetchJsonFile(owner, repo, ref, relPluginJsonPath);
+  if (relResult) {
+    return { pluginJson: relResult, pluginBasePath: relDir };
+  }
 
-  const pluginJson = await fetchJsonFile(owner, repo, ref, pluginJsonPath);
-  if (!pluginJson) return null;
-
-  return { pluginJson, pluginBasePath: pluginDir };
+  return null;
 }
