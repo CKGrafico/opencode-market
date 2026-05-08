@@ -1,6 +1,6 @@
 # opencode-market
 
-CLI to discover, install, and manage opencode agent plugins from GitHub marketplaces.
+CLI to discover, install, and manage opencode agent plugins from GitHub marketplaces. The goal of this tool is to never exist but meanwhile Opencode has no an official market I need a tool to install agents and skills from my private repos https://github.com/anomalyco/opencode/issues/7467#issuecomment-4407270984
 
 ## Usage
 
