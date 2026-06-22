@@ -37,12 +37,12 @@ export async function installPlugin(owner, repo, ref, pluginSource, pluginJson, 
   const prefix = (!pluginSource || pluginSource === '.') ? '' : pluginSource.replace(/\/+$/, '') + '/';
 
   if (pluginJson.agents) {
-    const agentsPath = `${prefix}${pluginJson.agents}`.replace(/\/+/g, '/').replace(/^\//, '');
+    const agentsPath = normalizePath(`${prefix}${pluginJson.agents}`);
     await downloadFolder(owner, repo, ref, agentsPath, path.join(base, 'agents'));
   }
 
   if (pluginJson.skills) {
-    const skillsPath = `${prefix}${pluginJson.skills}`.replace(/\/+/g, '/').replace(/^\//, '');
+    const skillsPath = normalizePath(`${prefix}${pluginJson.skills}`);
     await downloadFolder(owner, repo, ref, skillsPath, path.join(base, 'skills'));
   }
 
@@ -53,15 +53,46 @@ export async function installPlugin(owner, repo, ref, pluginSource, pluginJson, 
  * Download all files from a GitHub directory into a local destination,
  * preserving the directory structure relative to the source folder.
  */
+function normalizePath(p) {
+  return p.replace(/\/+/g, '/').replace(/\/\.\//g, '/').replace(/\/\.$/, '').replace(/^\//, '');
+}
+
+function getAlternatePath(remotePath) {
+  const normalized = remotePath.replace(/\/+$/, '');
+  const lastSegment = normalized.split('/').pop();
+  if (lastSegment.startsWith('.')) {
+    return normalized.replace(new RegExp(`\\.${escapeRegExp(lastSegment.slice(1))}$`), lastSegment.slice(1));
+  }
+  return normalized.replace(new RegExp(`${escapeRegExp(lastSegment)}$`), '.' + lastSegment);
+}
+
+function escapeRegExp(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 async function downloadFolder(owner, repo, ref, remotePath, localBase) {
   const normalizedRemote = remotePath.replace(/\/+$/, '');
-  const items = await listGitHubDirectory(owner, repo, ref, normalizedRemote);
-  const blobs = items.filter(i => i.type === 'blob');
+  let items = await listGitHubDirectory(owner, repo, ref, normalizedRemote);
+  let blobs = items.filter(i => i.type === 'blob');
 
   if (blobs.length === 0) {
+    const alternate = getAlternatePath(normalizedRemote);
+    if (alternate !== normalizedRemote) {
+      info(`No files found in ${normalizedRemote}, trying ${alternate}...`);
+      items = await listGitHubDirectory(owner, repo, ref, alternate);
+      blobs = items.filter(i => i.type === 'blob');
+      if (blobs.length > 0) {
+        return downloadToDisk(owner, repo, ref, alternate, blobs, localBase);
+      }
+    }
     info(`No files found in ${normalizedRemote}`);
     return;
   }
+
+  return downloadToDisk(owner, repo, ref, normalizedRemote, blobs, localBase);
+}
+
+async function downloadToDisk(owner, repo, ref, normalizedRemote, blobs, localBase) {
 
   for (const blob of blobs) {
     const relativePath = blob.path.slice(normalizedRemote.length + 1);
